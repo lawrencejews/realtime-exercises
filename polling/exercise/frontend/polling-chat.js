@@ -15,13 +15,49 @@ chat.addEventListener("submit", function (e) {
 });
 
 async function postNewMsg(user, text) {
-  // post to /poll a new message
-  // write code here
+
+  const data = {
+    user,
+    text
+  };
+
+  const options = {
+
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Context-Type": "application/json"
+    }
+  }
+
+  await fetch("/poll", options)
+ 
 }
 
 async function getNewMsgs() {
-  // poll the server
-  // write code here
+
+  let json;
+
+  try {
+    const res = await fetch("/poll");
+    json = await res.json();
+    
+    //Handling DDos during request.
+    if (res.status >= 400) {
+      throw new Error("request did not succeed: " + res.status);
+    }
+
+    allChat = json.msg;
+    render();
+
+    failedTries = 0;
+
+  } catch (e) {
+    // backoff code
+    console.error("polling error", e);
+    failedTries++;
+  }
+
 }
 
 function render() {
@@ -37,5 +73,19 @@ function render() {
 const template = (user, msg) =>
   `<li class="collection-item"><span class="badge">${user}</span>${msg}</li>`;
 
-// make the first request
-getNewMsgs();
+// Using requestAnimationFrame to pause page if client is not using it.
+let timeToMakeNextRequest = 0;
+const BACKOFF = 5000;
+let failedTries = 0;
+
+async function rafTimer(time) {
+
+  if (timeToMakeNextRequest <= time) {
+    console.log(time)
+    await getNewMsgs();
+    timeToMakeNextRequest = time + INTERVAL + failedTries * BACKOFF;
+  }
+  requestAnimationFrame(rafTimer);
+
+}
+requestAnimationFrame(rafTimer);
