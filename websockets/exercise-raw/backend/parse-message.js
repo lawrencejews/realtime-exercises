@@ -1,6 +1,6 @@
 function parseMessage(buffer) {
   const firstByte = buffer.readUInt8(0);
-  const opCode = firstByte & 0xf;
+  const opCode = firstByte & 0xf;          // logical AND operator.
 
   if (opCode === 8) {
     // connection closed
